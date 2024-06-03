@@ -71,7 +71,7 @@ const summarizeMessage = async (messageData: { content: string, attachments: str
   const combinedContent = `${textCorpus}\n\nImage Descriptions:\n${imageDescriptions.join('\n')}`;
 
   const response = await openai.Completion.create({
-    engine: 'gpt-4',
+    engine: 'gpt-4o',
     prompt: `Summarize the following content:\n\n${combinedContent}`,
     max_tokens: 300,
   });
