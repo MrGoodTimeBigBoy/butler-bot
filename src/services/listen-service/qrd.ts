@@ -3,8 +3,10 @@ import { BotCommand } from "../../bot/parseCommand";
 import { Option, orDefault, parseToNumber } from "../../util";
 import { deepApology, speak } from "../../bot/speak";
 import compareAsc from "date-fns/compareAsc";
+const openai = require('openai');
 
-const { SummarizerManager } = require("node-summarizer");
+openai.apiKey = 'open-ai-key';
+
 const USAGE_MESSAGE = `I expected: \`butler: qrd. <number of messages>\``;
 
 const validateValue = (value: number) => {
@@ -63,21 +65,23 @@ const summarizeMessage = async (messages: Message[]) => {
     buildAuthorFrequencyHistogram(messages)
   );
 
-  const summarizer = new SummarizerManager(corpus, 8);
+  const response = await openai.Completion.create({
+    engine: 'text-davinci-003',
+    prompt: `Summarize the following messages:\n\n${corpus}`,
+    max_tokens: 150,
+  });
 
-  const trSummary = await summarizer
-    .getSummaryByRank()
-    .then(({ summary }: any) => summary);
+  const trSummary = response.choices[0].text.trim();
 
-  const normalizedSummary: Array<string> = [
-    ...(new Set(trSummary.split(/[?.!]/gi)) as unknown as string[]),
+  const normalizedSummary = [
+    ...new Set(trSummary.split(/[?.!]/gi)),
   ].filter(Boolean);
 
   return `Top posters: \n${topAuthors
     .map(([author, posts]) => `\`${author}\`, with ${posts} posts`)
-    .join("\n")}\nSummary: \n${normalizedSummary
-    .map((x: string) => `\t - ${lineLength(300)(x)}`)
-    .join("\n")}`;
+    .join('\n')}\nSummary: \n${normalizedSummary
+    .map((x) => `\t - ${lineLength(300)(x)}`)
+    .join('\n')}`;
 };
 
 const fetchMessages = async (
